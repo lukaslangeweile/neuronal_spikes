@@ -72,48 +72,48 @@ Thank you for contributing to this project! We primarily use GitHub Desktop for 
       """
 ### Testing
 
-```python
-# Example: Testing your code locally
+#### Example: Testing your code locally
 # Run the code to verify it works as expected
-from my_module import preprocess_data
-
-data = [0.1, 0.5, 0.9]
-processed_data = preprocess_data(data)
-assert isinstance(processed_data, list), "Output should be a list"
+    ```python
+        from my_module import preprocess_data
+        
+        data = [0.1, 0.5, 0.9]
+        processed_data = preprocess_data(data)
+        assert isinstance(processed_data, list), "Output should be a list"
 
 # Example: Adding a test using pytest
 # Save this file in the 'tests' folder, e.g., tests/test_preprocess.py
-import pytest
-from my_module import preprocess_data
+    ```python
+    import pytest
+    from my_module import preprocess_data
+    
+    def test_preprocess_data():
+        data = [0.1, 0.5, 0.9]
+        result = preprocess_data(data)
+        assert len(result) == len(data), "Output length should match input"
+        assert all(isinstance(x, float) for x in result), "All elements should be floats"
 
-def test_preprocess_data():
-    data = [0.1, 0.5, 0.9]
-    result = preprocess_data(data)
-    assert len(result) == len(data), "Output length should match input"
-    assert all(isinstance(x, float) for x in result), "All elements should be floats"
-Resolving Conflicts in GitHub Desktop
-text
-Code kopieren
-# Step 1: Pull the Latest Changes
-# If GitHub Desktop notifies you of a conflict:
+# Resolving Conflicts in GitHub Desktop
+## Step 1: Pull the Latest Changes
+### If GitHub Desktop notifies you of a conflict:
 1. Open GitHub Desktop.
 2. Click the "Pull Origin" button to fetch the latest changes from the main branch.
 
-# Step 2: Resolve Conflicts
+## Step 2: Resolve Conflicts
 1. Navigate to the "Changes" tab in GitHub Desktop.
 2. Locate files marked as "conflicted."
 3. Click on a conflicted file to open the merge tool.
 4. Review both versions of the code. Choose which changes to keep, or combine changes as necessary.
 
-# Step 3: Commit the Resolved Changes
+## Step 3: Commit the Resolved Changes
 1. After resolving all conflicts, commit your changes in GitHub Desktop.
 2. Click "Push Origin" to upload the updated branch.
-Need Help?
-text
-Code kopieren
-# If you encounter issues:
+
+# Need Help?
+
+## If you encounter issues:
 - Discuss during team meetings or ask questions in the communication channel.
 - Open a GitHub issue if the problem is technical.
 
-# Reminder:
+## Reminder:
 We are here to support your contributions and help resolve any issues!
