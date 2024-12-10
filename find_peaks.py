@@ -4,6 +4,7 @@ import os
 import pathlib
 import pandas as pd
 import math
+import pickle
 
 DIR = pathlib.Path(os.curdir)
 
@@ -75,6 +76,17 @@ def find_peaks(data, samplerate):
 
         array_id += 1 # increase array_id after every completed array
 
+
+def read_file():
+
+ file_name = "MembranePotential.pkl"
+ current_dir = pathlib.Path.cwd()
+ file_path = next(current_dir.rglob(file_name))
+
+ with open(file_path, 'rb') as fh:   #Daten aus der Pickle-Datei laden
+    data, sampling_freq = pickle.load(fh)
+ return data, sampling_freq
+ 
 def is_peak(sample, baseline, std):
     threshold = baseline + 2 * std
     if sample > threshold:
@@ -89,3 +101,4 @@ def calculate_baseline(numbers):
         raise ValueError("All elements in the list must be numbers.")
 
     return sum(numbers) / len(numbers)
+
