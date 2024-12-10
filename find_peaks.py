@@ -75,6 +75,13 @@ def find_peaks(data, samplerate):
 
         array_id += 1 # increase array_id after every completed array
 
+def is_peak(sample, baseline, std):
+    threshold = baseline + 2 * std
+    if sample > threshold:
+        return True
+    else:
+        return False
+
 def calculate_baseline(numbers):
     if not numbers:
         return None
