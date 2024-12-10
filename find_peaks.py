@@ -87,3 +87,18 @@ def read_file():
     data, sampling_freq = pickle.load(fh)
  return data, sampling_freq
  
+def is_peak(sample, baseline, std):
+    threshold = baseline + 2 * std
+    if sample > threshold:
+        return True
+    else:
+        return False
+
+def calculate_baseline(numbers):
+    if not numbers:
+        return None
+    if not all(isinstance(x, (int, float)) for x in numbers):
+        raise ValueError("All elements in the list must be numbers.")
+
+    return sum(numbers) / len(numbers)
+
