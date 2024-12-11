@@ -9,26 +9,28 @@ import matplotlib.pyplot as plt
 
 DIR = pathlib.Path(os.curdir)
 
+
 def save_peak(peak_id, array_id, peak_nr, sample, time, baseline, abs_amplitude, rel_amplitude, fwhm):
     filepath = DIR / "data" / "peak_results.csv"
 
-    if filepath.exists() and filepath.is_file() and filepath.suffix == ".csv":
-        df = pd.read_csv(filepath)
-    else:
-        df = pd.DataFrame(columns=["peak_id", "array_id", "peak_nr", "sample", "time", "baseline", "abs_amplitude", "rel_amplitude", "fwhm"])
+    # Ensure the directory exists
+    filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    new_row = pd.DataFrame({"peak_id": peak_id,
-               "array_id": array_id,
-               "peak_nr": peak_nr,
-               "sample": sample,
-               "time": time,
-               "baseline": baseline,
-               "abs_amplitude": abs_amplitude,
-               "rel_amplitude": rel_amplitude,
-               "fwhm": fwhm})
+    # Prepare the new row as a DataFrame
+    new_row = pd.DataFrame([{
+        "peak_id": peak_id,
+        "array_id": array_id,
+        "peak_nr": peak_nr,
+        "sample": sample,
+        "time": time,
+        "baseline": baseline,
+        "abs_amplitude": abs_amplitude,
+        "rel_amplitude": rel_amplitude,
+        "fwhm": fwhm
+    }])
 
-    pd.concat([df, new_row])
-    df.to_csv(filepath, index=False)
+    # Append to the file, writing headers only if the file does not exist
+    new_row.to_csv(filepath, mode='a', header=not filepath.exists(), index=False)
 
 def find_peaks(data, samplerate):
     # set filepath for result file
@@ -48,39 +50,52 @@ def find_peaks(data, samplerate):
         peak_id = 0
         array_id = 0
 
+    data = np.array(data)
+    print(data.shape)
 
-    for row in data:
+    for col in range(data.shape[1]):
+        column_data = data[:, col]  # extract data from columns
 
         # get baseline and standard deviation from every array (row)
-        baseline = calculate_baseline(row)
-        std = numpy.std(row)
+        baseline = calculate_baseline(column_data)
+        print(baseline)
+        std = numpy.std(column_data)
+        print(std)
 
-        # set peak_nr and sample_nr zero at the beginning of every array check
+        # set peak_nr zero at the beginning of every array check
         peak_nr = 0
-        sample_nr = 0
+        sample_list = []
 
-        for sample in row:
-            if is_peak(sample, baseline, std):
+        for index, sample in enumerate(column_data):
+            if is_above_threshold(sample, baseline, std):
+
+                sample_list.append(sample)
+
+            elif is_above_threshold(column_data[index-1], baseline, std) and not is_above_threshold(sample, baseline, std)\
+                    or is_above_threshold(column_data[index-1], baseline, std) and index == len(column_data)-1:
+                peak_value = max(sample_list)
+                peak_index = index - (len(sample_list) - sample_list.index(peak_value))
 
                 # calculate time, amplitudes and fwhm
-                time = samplerate * sample_nr
-                abs_amplitude = sample
+                time = peak_index / samplerate
+                abs_amplitude = peak_value
                 rel_amplitude = abs_amplitude - baseline
-                fwhm = get_fwhm(sample, abs_amplitude)
+                fwhm = calculate_fwhm(peak_index, column_data, baseline)
 
                 # save data in result file
-                save_peak(peak_id, array_id, peak_nr, sample_nr, time, baseline, abs_amplitude, rel_amplitude, fwhm)
+                save_peak(peak_id, array_id, peak_nr, index, time, baseline, abs_amplitude, rel_amplitude, fwhm)
 
                 peak_id += 1  # increase peak_id after every newly identified peak
+                peak_nr += 1
+                sample_list = []
 
-            sample_nr += 1 # increase sample_nr after every peak_check
 
         array_id += 1 # increase array_id after every completed array
 
 
-def calculate_fwhm(y):
+def calculate_fwhm(peak_index, row, baseline):
     """
-    Berechnet die Halbwertsbreite (FWHM) für alle Peaks im Datensatz.
+    Berechnet die Halbwertsbreite (FWHM) für einen gegebenen Peak.
 
     Parameter:
     - y: Array mit den y-Werten (die x-Werte ergeben sich durch den Index).
@@ -90,55 +105,51 @@ def calculate_fwhm(y):
     - peaks: Indizes der Peaks im y-Array.
     """
     # Umwandlung von y in ein NumPy-Array, falls es eine Liste ist
-    y = np.array(y)
-    
-    # Finde alle Peaks im Datensatz
-    peaks, _ = find_peaks(y)
+    row = np.array(row)
+
     fwhm_list = []  # Speichert die FWHM-Werte
 
-    # Gehe jeden Peak durch und berechne die FWHM
-    for peak_index in peaks:
-        half_height = y[peak_index] / 2  # Halbe Höhe des aktuellen Peaks
-        
-        # Linke Grenze: Werte links vom Peak <= Halbwert
-        left_indices = np.where(y[:peak_index] <= half_height)[0]
-        if len(left_indices) > 0:
-            left_index = left_indices[-1]
-        else:
-            left_index = 0  # Falls kein Punkt gefunden wird, ist die Grenze der Start des Arrays.
+    rel_amplitude = row[peak_index] - baseline
+    half_height = rel_amplitude / 2  # Halbe Höhe des aktuellen Peaks
 
-        # Rechte Grenze: Werte rechts vom Peak <= Halbwert
-        right_indices = np.where(y[peak_index:] <= half_height)[0]
-        if len(right_indices) > 0:
-            right_index = right_indices[0] + peak_index
-        else:
-            right_index = len(y) - 1  # Falls kein Punkt gefunden wird, ist die Grenze das Ende des Arrays.
+    # Linke Grenze: Werte links vom Peak <= Halbwert
+    left_indices = np.where((row[:peak_index] - baseline) <= half_height)[0]
+    if len(left_indices) > 0:
+        left_index = left_indices[-1]
+    else:
+        left_index = 0  # Falls kein Punkt gefunden wird, ist die Grenze der Start des Arrays.
 
-        # FWHM berechnen
-        fwhm = right_index - left_index
-        fwhm_list.append(fwhm)
+    # Rechte Grenze: Werte rechts vom Peak <= Halbwert
+    right_indices = np.where((row[peak_index:] - baseline) <= half_height)[0]
+    if len(right_indices) > 0:
+        right_index = right_indices[0] + peak_index
+    else:
+        right_index = len(row) - 1  # Falls kein Punkt gefunden wird, ist die Grenze das Ende des Arrays.
+
+    # FWHM berechnen
+    fwhm = right_index - left_index
     
-    return fwhm_list, peaks
+    return fwhm
 
-def read_file():
+def read_file(file_name = "MembranePotential.pkl"):
+    current_dir = pathlib.Path.cwd()
+    file_path = next(current_dir.rglob(file_name))
 
- file_name = "MembranePotential.pkl"
- current_dir = pathlib.Path.cwd()
- file_path = next(current_dir.rglob(file_name))
+    with open(file_path, 'rb') as fh:   # Daten aus der Pickle-Datei laden
+        data, sampling_freq = pickle.load(fh)
+    return data, sampling_freq
 
- with open(file_path, 'rb') as fh:   #Daten aus der Pickle-Datei laden
-    data, sampling_freq = pickle.load(fh)
- return data, sampling_freq
- 
-def is_peak(sample, baseline, std):
-    threshold = baseline + 2 * std
+
+def is_above_threshold(sample, baseline, std):
+    threshold = baseline + 3 * std
     if sample > threshold:
         return True
     else:
         return False
 
+
 def calculate_baseline(numbers):
-    if not numbers:
+    if numbers is None:
         return None
     if not all(isinstance(x, (int, float)) for x in numbers):
         raise ValueError("All elements in the list must be numbers.")
