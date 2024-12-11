@@ -78,6 +78,48 @@ def find_peaks(data, samplerate):
         array_id += 1 # increase array_id after every completed array
 
 
+def calculate_fwhm(y):
+    """
+    Berechnet die Halbwertsbreite (FWHM) für alle Peaks im Datensatz.
+
+    Parameter:
+    - y: Array mit den y-Werten (die x-Werte ergeben sich durch den Index).
+
+    Rückgabe:
+    - fwhm_list: Liste mit den berechneten FWHM-Werten für jeden gefundenen Peak.
+    - peaks: Indizes der Peaks im y-Array.
+    """
+    # Umwandlung von y in ein NumPy-Array, falls es eine Liste ist
+    y = np.array(y)
+    
+    # Finde alle Peaks im Datensatz
+    peaks, _ = find_peaks(y)
+    fwhm_list = []  # Speichert die FWHM-Werte
+
+    # Gehe jeden Peak durch und berechne die FWHM
+    for peak_index in peaks:
+        half_height = y[peak_index] / 2  # Halbe Höhe des aktuellen Peaks
+        
+        # Linke Grenze: Werte links vom Peak <= Halbwert
+        left_indices = np.where(y[:peak_index] <= half_height)[0]
+        if len(left_indices) > 0:
+            left_index = left_indices[-1]
+        else:
+            left_index = 0  # Falls kein Punkt gefunden wird, ist die Grenze der Start des Arrays.
+
+        # Rechte Grenze: Werte rechts vom Peak <= Halbwert
+        right_indices = np.where(y[peak_index:] <= half_height)[0]
+        if len(right_indices) > 0:
+            right_index = right_indices[0] + peak_index
+        else:
+            right_index = len(y) - 1  # Falls kein Punkt gefunden wird, ist die Grenze das Ende des Arrays.
+
+        # FWHM berechnen
+        fwhm = right_index - left_index
+        fwhm_list.append(fwhm)
+    
+    return fwhm_list, peaks
+
 def read_file():
 
  file_name = "MembranePotential.pkl"
@@ -103,8 +145,7 @@ def calculate_baseline(numbers):
 
     return sum(numbers) / len(numbers)
 
-
-# Function to analyze the data and plot the results
+  
 def analyze_and_plot_peaks(data, sampling_freq, channel_index=0, peak_height=0, peak_distance=10):
     # Extract the specified channel and create a time vector
     membrane_potential = data[:, channel_index]
@@ -135,8 +176,3 @@ def analyze_and_plot_peaks(data, sampling_freq, channel_index=0, peak_height=0, 
     
     # Return the processed data
     return membrane_potential, time, peak_times, peak_values
-
-
-# Example usage
-data, sampling_freq = read_file()  # Read the file
-analyze_and_plot_peaks(data, sampling_freq, channel_index=0, peak_height=0, peak_distance=10)
