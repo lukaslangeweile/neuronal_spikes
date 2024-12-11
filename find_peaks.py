@@ -5,6 +5,7 @@ import pathlib
 import pandas as pd
 import math
 import pickle
+import matplotlib.pyplot as plt
 
 DIR = pathlib.Path(os.curdir)
 
@@ -144,4 +145,34 @@ def calculate_baseline(numbers):
 
     return sum(numbers) / len(numbers)
 
-
+  
+def analyze_and_plot_peaks(data, sampling_freq, channel_index=0, peak_height=0, peak_distance=10):
+    # Extract the specified channel and create a time vector
+    membrane_potential = data[:, channel_index]
+    time = np.arange(len(membrane_potential)) / sampling_freq
+    
+    # Detect peaks in the membrane potential
+    peaks, properties = find_peaks(membrane_potential, height=peak_height, distance=peak_distance)
+    
+    # Isolate peaks
+    peak_times = time[peaks]
+    peak_values = membrane_potential[peaks]
+    
+    # Display results
+    print("Detected Peaks:")
+    print("Times (s):", peak_times)
+    print("Values (mV):", peak_values)
+    
+    # Plot the data and peaks
+    plt.figure(figsize=(12, 6))
+    plt.plot(time, membrane_potential, label='Membrane Potential')
+    plt.plot(peak_times, peak_values, 'rx', label='Peaks')  # Mark peaks with red 'x'
+    plt.title(f'Membrane Potential (Channel {channel_index}) with Peaks')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Membrane Potential (mV)')
+    plt.legend()
+    plt.grid()
+    plt.show()
+    
+    # Return the processed data
+    return membrane_potential, time, peak_times, peak_values
