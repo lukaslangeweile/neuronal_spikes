@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 DIR = pathlib.Path(os.curdir)
 
 
-def save_peak(peak_id, array_id, peak_nr, sample, time, baseline, abs_amplitude, rel_amplitude, fwhm):
+def save_peak(peak_id, array_id, peak_nr, sample, time, baseline, abs_amplitude, rel_amplitude, fwhm, left_slope, right_slope):
     filepath = DIR / "data" / "peak_results.csv"
 
     # Ensure the directory exists
@@ -26,7 +26,9 @@ def save_peak(peak_id, array_id, peak_nr, sample, time, baseline, abs_amplitude,
         "baseline": baseline,
         "abs_amplitude": abs_amplitude,
         "rel_amplitude": rel_amplitude,
-        "fwhm": fwhm
+        "fwhm": fwhm,
+        "left_slope": left_slope,
+        "right_slope": right_slope
     }])
 
     # Append to the file, writing headers only if the file does not exist
@@ -80,10 +82,10 @@ def find_peaks(data, samplerate):
                 time = peak_index / samplerate
                 abs_amplitude = peak_value
                 rel_amplitude = abs_amplitude - baseline
-                fwhm = calculate_fwhm(peak_index, column_data, baseline)
+                fwhm, left_slope, right_slope = calculate_fwhm_and_slopes(peak_index, column_data, baseline)
 
                 # save data in result file
-                save_peak(peak_id, array_id, peak_nr, index, time, baseline, abs_amplitude, rel_amplitude, fwhm)
+                save_peak(peak_id, array_id, peak_nr, index, time, baseline, abs_amplitude, rel_amplitude, fwhm, left_slope, right_slope)
 
                 peak_id += 1  # increase peak_id after every newly identified peak
                 peak_nr += 1
@@ -93,7 +95,7 @@ def find_peaks(data, samplerate):
         array_id += 1 # increase array_id after every completed array
 
 
-def calculate_fwhm(peak_index, row, baseline):
+def calculate_fwhm_and_slopes(peak_index, row, baseline):
     """
     Berechnet die Halbwertsbreite (FWHM) für einen gegebenen Peak.
 
@@ -128,8 +130,10 @@ def calculate_fwhm(peak_index, row, baseline):
 
     # FWHM berechnen
     fwhm = right_index - left_index
-    
-    return fwhm
+
+    left_slope, right_slope = calculate_slopes(row, peak_index, left_index, right_index)
+
+    return fwhm, left_slope, right_slope
 
 def read_file(file_name = "MembranePotential.pkl"):
     current_dir = pathlib.Path.cwd()
