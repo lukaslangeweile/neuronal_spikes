@@ -157,17 +157,26 @@ def calculate_baseline(numbers):
     return sum(numbers) / len(numbers)
 
   
-def analyze_and_plot_peaks(data, sampling_freq, channel_index=0, peak_height=0, peak_distance=10):
+def analyze_and_plot_peaks(channel_index=0, peak_height=0, peak_distance=10):
+    file_name = DIR / "data" / f"plot_channel_{channel_index}.pdf"
+
     # Extract the specified channel and create a time vector
+
+    data, sampling_freq = read_file()
     membrane_potential = data[:, channel_index]
     time = np.arange(len(membrane_potential)) / sampling_freq
-    
+
     # Detect peaks in the membrane potential
-    peaks, properties = find_peaks(membrane_potential, height=peak_height, distance=peak_distance)
+    file = DIR / "data" / "peak_results.csv"
+    df = pd.read_csv(file)
+
+    # filter df for channel
+
+    df_filtered = df[df["array_id"] == channel_index]
     
     # Isolate peaks
-    peak_times = time[peaks]
-    peak_values = membrane_potential[peaks]
+    peak_times = df_filtered["time"]
+    peak_values = df_filtered["abs_amplitude"]
     
     # Display results
     print("Detected Peaks:")
@@ -183,7 +192,8 @@ def analyze_and_plot_peaks(data, sampling_freq, channel_index=0, peak_height=0, 
     plt.ylabel('Membrane Potential (mV)')
     plt.legend()
     plt.grid()
-    plt.show()
+    plt.savefig(file_name)
+
     
     # Return the processed data
     return membrane_potential, time, peak_times, peak_values
@@ -195,3 +205,4 @@ def calculate_slopes(y, peak_index, left_index, right_index):
     left_slope = (y[peak_index] - y[left_index]) / (peak_index - left_index)
     right_slope = (y[right_index] - y[peak_index]) / (right_index - peak_index)
     return left_slope, right_slope
+
