@@ -198,5 +198,11 @@ def analyze_and_plot_peaks(channel_index=0, peak_height=0, peak_distance=10):
     # Return the processed data
     return membrane_potential, time, peak_times, peak_values
 
-for i in range(13):
-    analyze_and_plot_peaks(channel_index=i)
+def calculate_slopes(y, peak_index, left_index, right_index):
+    """
+    Berechnet die Steigungen links und rechts eines Peaks basierend auf den Indizes.
+    """
+    left_slope = (y[peak_index] - y[left_index]) / (peak_index - left_index)
+    right_slope = (y[right_index] - y[peak_index]) / (right_index - peak_index)
+    return left_slope, right_slope
+
